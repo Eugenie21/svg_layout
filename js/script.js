@@ -11,14 +11,14 @@ var SvgLayout = (function($) {
 				this.viewParams = {
 					color: {
 						text: '#fff',
-						back: 'none',
-						border: '#4B4B4B'
+						back: 'rgba(240, 79, 15, 0.6)',
+						border: 'rgba(0, 0, 0, 0.7)'
 					},
 					size: {
 						text: '15',
 						border: '6'
 					},
-					animationSpeed: '1000'
+					animationSpeed: 300
 				};
 				this.draw = function(){ 
 
@@ -39,6 +39,10 @@ var SvgLayout = (function($) {
 
 			drawNav: null,
 			drawSide: null,
+
+			animate: {
+				border: null
+			},
 
 			makeLink: null,
 			// stringSize: null
@@ -75,9 +79,27 @@ var SvgLayout = (function($) {
 		modulesOnPage[module.modkey].draw();
 	}
 
-	// methodMap.stringSize = function(string) {
+	methodMap.animate.border = function(borderPath, modkey, index = 0) {
 
-	// }
+		var path = modulesOnPage[modkey].snapObj.path(borderPath[index]), 
+			pathLength = path.getTotalLength();
+
+		var animation = path.attr({
+			stroke: modulesOnPage[modkey].viewParams.color.border,
+			fill:'none',
+			strokeWidth: modulesOnPage[modkey].viewParams.size.border,
+			"stroke-dasharray": pathLength + " " + pathLength,
+			"stroke-dashoffset": pathLength
+		}).animate({"stroke-dashoffset": 0}, modulesOnPage[modkey].viewParams.animationSpeed, mina.linear);
+
+		setTimeout(function() {
+			if(borderPath[++index]) {
+				methodMap.animate.border(borderPath, modkey, index++);
+			}else{
+				return true;
+			}
+		}, modulesOnPage[modkey].viewParams.animationSpeed/2);
+	}
 
 	//NAVBAR
 	methodMap.drawNav = function(modkey) {
@@ -89,38 +111,70 @@ var SvgLayout = (function($) {
 
 		var blockHeight = parseInt(jQuery(modulesOnPage[modkey].containerName).height()),
 			blockWidth = parseInt(jQuery(modulesOnPage[modkey].containerName).width()),
-			borderWidth = modulesOnPage[modkey].viewParams.size.border
+			borderWidth = modulesOnPage[modkey].viewParams.size.border,
 			links = modulesOnPage[modkey].content.links.length,
 			linkWidth = blockWidth/links - borderWidth,
 			linkHeight = blockHeight-borderWidth*2,
-			borderPath = [];
+			borderPath = [],
+			buttons = [];
 
-			for(var i=0; i<links; i++) {
+		for(var i=0; i<links; i++) {
 
-				if(i==0) {
-					borderPath.push('M '+(borderWidth/2+linkWidth*i+borderWidth*i)+' '+(borderWidth/2)
-									+'L '+(borderWidth/2+linkWidth*i+borderWidth*i)+' '+(linkHeight+borderWidth/2)
-									+', '+(borderWidth/2+linkWidth*(i+1)+borderWidth*i)+' '+(linkHeight+borderWidth/2)
-									+', '+(borderWidth/2+linkWidth*(i+1)+borderWidth*i)+' '+(borderWidth/2)
-									+', '+(linkWidth*i+borderWidth*i)+' '+(borderWidth/2)); //Не убирать 'i' --- Потому-что !!!
-				}else{
-					borderPath.push('M '+(borderWidth*i+linkWidth*i)+' '+(linkHeight+borderWidth/2)
-									+'L '+(borderWidth*i+linkWidth*(i+1)+borderWidth/2)+' '+(linkHeight+borderWidth/2)
-									+', '+(borderWidth*i+linkWidth*(i+1)+borderWidth/2)+' '+(borderWidth/2)
-									+', '+(linkWidth*i+borderWidth*i)+' '+(borderWidth/2));
-				}
-			}
+			// buttons.push(function() {
+			
 
-			for(i in borderPath) {
-				modulesOnPage[modkey].snapObj.path(borderPath[i]).attr({
-					stroke: modulesOnPage[modkey].viewParams.color.border,
+			// });
+
+			if(i==0) {
+				borderPath.push('M '+(borderWidth/2+linkWidth*i+borderWidth*i)+' '+(borderWidth/2)
+								+'L '+(borderWidth/2+linkWidth*i+borderWidth*i)+' '+(blockHeight-borderWidth/2)
+								+', '+(borderWidth/2+linkWidth*(i+1)+borderWidth*i)+' '+(blockHeight-borderWidth/2)
+								+', '+(borderWidth/2+linkWidth*(i+1)+borderWidth*i)+' '+(borderWidth/2)
+								+', '+(borderWidth/2+ linkWidth*i+borderWidth*i)+' '+(borderWidth/2)+'z'); //Не убирать 'i' --- Потому-что !!!
+
+				modulesOnPage[modkey].snapObj.rect(borderWidth, borderWidth, (linkWidth-borderWidth), linkHeight).attr({
+					stroke: 'none',
 					fill: modulesOnPage[modkey].viewParams.color.back,
-					strokeWidth: borderWidth
+					cursor: 'pointer'
+				});
+
+				console.log(linkWidth);
+
+				modulesOnPage[modkey].snapObj.text( (linkWidth/2+borderWidth/2), (blockHeight/2), modulesOnPage[modkey].content.links[i].title).attr({
+					fill: modulesOnPage[modkey].viewParams.color.text,
+					'font-family': 'Sans-serif',
+					'font-size': modulesOnPage[modkey].viewParams.size.text+'px',
+					'dominant-baseline': 'middle',
+					'font-weight': 'bold',
+    				textAnchor: "middle"
+				});
+			}else{
+				borderPath.push('M '+(borderWidth*i+linkWidth*i)+' '+(blockHeight-borderWidth/2)
+								+'L '+(borderWidth*i+linkWidth*(i+1)+borderWidth/2)+' '+(blockHeight-borderWidth/2)
+								+', '+(borderWidth*i+linkWidth*(i+1)+borderWidth/2)+' '+(borderWidth/2)
+								+', '+(linkWidth*i+borderWidth*i)+' '+(borderWidth/2))+'z';
+
+				modulesOnPage[modkey].snapObj.rect((borderWidth*i + linkWidth*i), borderWidth, linkWidth, linkHeight).attr({
+					stroke: 'none',
+					fill: modulesOnPage[modkey].viewParams.color.back,
+					cursor: 'pointer'
+				});
+
+				modulesOnPage[modkey].snapObj.text( (linkWidth/2+borderWidth*i+linkWidth*i), (blockHeight/2), modulesOnPage[modkey].content.links[i].title).attr({
+					fill: modulesOnPage[modkey].viewParams.color.text,
+					'font-family': 'Sans-serif',
+					'font-size': modulesOnPage[modkey].viewParams.size.text+'px',
+					'dominant-baseline': 'middle',
+					'font-weight': 'bold',
+    				textAnchor: "middle"
 				});
 			}
+		}
 
-		console.log(borderPath);
+		methodMap.animate.border(borderPath, modkey);
 	}
+
+	
 
 	//SIDEBAR
 	methodMap.drawSide = function(modkey) {
@@ -162,16 +216,16 @@ document.addEventListener("DOMContentLoaded", function () {
 					{title: 'Продукты', link: '#'},
 					{title: 'Доставка', link: '#'},
 					{title: 'О нас', link: '#'},
+					{title: 'Телефон', link: '#'},
+					{title: 'О нас', link: '#'},
 					{title: 'Телефон', link: '#'}
 				]
 			},
-			// viewParams: {
-			// 	color: {
-			// 		text: '#000',
-			// 		back: '#ffa',
-			// 		border: '#000'
-			// 	}
-			// }
+			viewParams: {
+				size: {
+					border: '2'
+				}
+			}
 		},{
 			type: 'navbar',
 			modkey: 'navbar1',
@@ -182,9 +236,6 @@ document.addEventListener("DOMContentLoaded", function () {
 					{title: 'Продукты', link: '#'},
 					{title: 'Доставка', link: '#'},
 					{title: 'О нас', link: '#'},
-					{title: 'Телефон', link: '#'},
-					{title: 'Телефон', link: '#'},
-					{title: 'Телефон', link: '#'}
 				]
 			},
 			viewParams: {
@@ -192,7 +243,11 @@ document.addEventListener("DOMContentLoaded", function () {
 					text: '#000',
 					back: '#ffa',
 					border: '#000'
-				}
+				},
+				size: {
+					border: '10'
+				},
+				animationSpeed: 300
 			}
 		},{
 			type: 'sidebar',
@@ -210,7 +265,7 @@ document.addEventListener("DOMContentLoaded", function () {
 			viewParams: {
 				color: {
 					text: '#000',
-					back: '#ffa',
+					back: '#fcc',
 					border: '#000'
 				}
 			}
@@ -220,4 +275,4 @@ document.addEventListener("DOMContentLoaded", function () {
 
 //Проверить совпадение имен модулей на странице
 //Сделать обертку
-//Разобраться с шириной модуля
+//Сделать резиновые модули
