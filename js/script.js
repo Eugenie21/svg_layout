@@ -7,6 +7,8 @@ var SvgLayout = (function($) {
 				this.modkey = module.modkey;
 				this.containerName = module.containerName;
 				this.snapObj = null;
+				this.pathArray = [];
+				this.contentArray = [];
 				this.content = module.content;
 				this.viewParams = {
 					color: {
@@ -16,16 +18,17 @@ var SvgLayout = (function($) {
 					},
 					size: {
 						text: '15',
-						border: '6'
+						border: 2
 					},
-					animationSpeed: 300
+					fontFamily: 'Sans-serif',
+					animationSpeed: 1000
 				};
 				this.draw = function(){ 
 
 					switch(module.type) {
-						case 'navbar': methodMap.drawNav(module.modkey)
+						case 'horizontal': methodMap.horizontalButtons(module.modkey)
 							break
-						case 'sidebar': methodMap.drawSide(module.modkey)
+						case 'vertical': methodMap.verticalButtons(module.modkey)
 							break
 						default: console.log("No such module '"+module.type+"'")
 							break
@@ -37,17 +40,16 @@ var SvgLayout = (function($) {
 			svgInit: null,
 			moduleInit: null,
 
-			drawNav: null,
-			drawSide: null,
+			horizontalButtons: null,
+			verticalButtons: null,
 
 			animate: {
-				border: null
+				border: null,
+				content: null
 			},
 
-			makeLink: null,
-			// stringSize: null
+			shuffleArray: null
 		};
-
 
 	methodMap.moduleInit = function(module) {
 
@@ -79,106 +81,180 @@ var SvgLayout = (function($) {
 		modulesOnPage[module.modkey].draw();
 	}
 
-	methodMap.animate.border = function(borderPath, modkey, index = 0) {
+	methodMap.shuffleArray = function(array) {
 
-		var path = modulesOnPage[modkey].snapObj.path(borderPath[index]), 
-			pathLength = path.getTotalLength();
+		var currentIndex = array.length, temporaryValue, randomIndex ;
 
-		var animation = path.attr({
-			stroke: modulesOnPage[modkey].viewParams.color.border,
-			fill:'none',
-			strokeWidth: modulesOnPage[modkey].viewParams.size.border,
-			"stroke-dasharray": pathLength + " " + pathLength,
-			"stroke-dashoffset": pathLength
-		}).animate({"stroke-dashoffset": 0}, modulesOnPage[modkey].viewParams.animationSpeed, mina.linear);
+		// While there remain elements to shuffle...
+		while (0 !== currentIndex) {
 
-		setTimeout(function() {
-			if(borderPath[++index]) {
-				methodMap.animate.border(borderPath, modkey, index++);
-			}else{
-				return true;
-			}
-		}, modulesOnPage[modkey].viewParams.animationSpeed/2);
+			// Pick a remaining element...
+			randomIndex = Math.floor(Math.random() * currentIndex);
+			currentIndex -= 1;
+
+			// And swap it with the current element.
+			temporaryValue = array[currentIndex];
+			array[currentIndex] = array[randomIndex];
+			array[randomIndex] = temporaryValue;
+
+			console.log(randomIndex);
+		}
+
+		return array;
 	}
 
-	//NAVBAR
-	methodMap.drawNav = function(modkey) {
+	methodMap.animate.border = function(modkey, index = 0) {
 
-		if(!(modulesOnPage[modkey].content.links.length >  1)) {
+		var path = modulesOnPage[modkey].pathArray[index], 
+			pathLength = path.getTotalLength();
+
+		path.animate({"stroke-dashoffset": 0}, modulesOnPage[modkey].viewParams.animationSpeed, mina.linear);
+
+		setTimeout(function() {
+			if(modulesOnPage[modkey].pathArray[++index]) {
+				methodMap.animate.border(modkey, index++);
+			}else{
+				methodMap.animate.content(modkey);
+			}
+		}, modulesOnPage[modkey].viewParams.animationSpeed/2);
+		return false;
+	}
+
+	methodMap.animate.content = function(modkey, index = 0) {
+		
+		modulesOnPage[modkey].contentArray[index].animate({ 'transform': 'T 0' }, 
+		modulesOnPage[modkey].viewParams.animationSpeed, mina.linear);
+
+		setTimeout(function() {
+			if(modulesOnPage[modkey].contentArray[++index]) {
+				methodMap.animate.content(modkey, index++);
+			}else{
+				return true			
+			}
+		}, modulesOnPage[modkey].viewParams.animationSpeed/2);
+		return false;
+	}
+
+	//horizontal
+	methodMap.horizontalButtons = function(modkey) {
+
+		if(modulesOnPage[modkey].content.links.length <  1) {
 			console.log('No Links in module '+ modkey);
 			return false;
 		}
 
 		var blockHeight = parseInt(jQuery(modulesOnPage[modkey].containerName).height()),
 			blockWidth = parseInt(jQuery(modulesOnPage[modkey].containerName).width()),
-			borderWidth = modulesOnPage[modkey].viewParams.size.border,
+			borderWidth = parseInt(modulesOnPage[modkey].viewParams.size.border),
 			links = modulesOnPage[modkey].content.links.length,
-			linkWidth = blockWidth/links - borderWidth,
+			linkWidth = blockWidth/links - borderWidth*2,
 			linkHeight = blockHeight-borderWidth*2,
-			borderPath = [],
-			buttons = [];
+			path = null,
+			text = null,
+			rect = null,
+			group = null;
 
 		for(var i=0; i<links; i++) {
 
-			// buttons.push(function() {
-			
+			path = modulesOnPage[modkey].snapObj.path('M '+(linkWidth*i+borderWidth*(2*i+0.5))+' '+(borderWidth)
+				+'L '+(linkWidth*i+borderWidth*(2*i+0.5))+' '+(blockHeight-borderWidth/2)
+				+', '+(linkWidth*(i+1)+borderWidth*(2*i+1.5))+' '+(blockHeight-borderWidth/2)
+				+', '+(linkWidth*(i+1)+borderWidth*(2*i+1.5))+' '+(borderWidth/2)
+				+', '+(linkWidth*i+borderWidth*(2*i+0.5))+' '+(borderWidth/2)+'z');
 
-			// });
+			rect = modulesOnPage[modkey].snapObj.rect( (linkWidth*i+borderWidth*(2*i+1)), borderWidth, (linkWidth), linkHeight).attr({
+				stroke: 'none',
+				fill: modulesOnPage[modkey].viewParams.color.back
+			});
 
-			if(i==0) {
-				borderPath.push('M '+(borderWidth/2+linkWidth*i+borderWidth*i)+' '+(borderWidth/2)
-								+'L '+(borderWidth/2+linkWidth*i+borderWidth*i)+' '+(blockHeight-borderWidth/2)
-								+', '+(borderWidth/2+linkWidth*(i+1)+borderWidth*i)+' '+(blockHeight-borderWidth/2)
-								+', '+(borderWidth/2+linkWidth*(i+1)+borderWidth*i)+' '+(borderWidth/2)
-								+', '+(borderWidth/2+ linkWidth*i+borderWidth*i)+' '+(borderWidth/2)+'z'); //Не убирать 'i' --- Потому-что !!!
+			text = modulesOnPage[modkey].snapObj.text(((linkWidth+borderWidth*2)*(i+0.5)), (blockHeight/2), modulesOnPage[modkey].content.links[i].title).attr({
+				fill: modulesOnPage[modkey].viewParams.color.text,
+				'font-family': modulesOnPage[modkey].viewParams.fontFamily,
+				'font-size': modulesOnPage[modkey].viewParams.size.text+'px',
+				'dominant-baseline': 'middle',
+				'font-weight': 'bold',
+				textAnchor: "middle"
+			});
 
-				modulesOnPage[modkey].snapObj.rect(borderWidth, borderWidth, (linkWidth-borderWidth), linkHeight).attr({
-					stroke: 'none',
-					fill: modulesOnPage[modkey].viewParams.color.back,
-					cursor: 'pointer'
-				});
+			group = modulesOnPage[modkey].snapObj.g().attr({
+				cursor: 'pointer'
+			});
 
-				console.log(linkWidth);
+			group.add(rect,text);
 
-				modulesOnPage[modkey].snapObj.text( (linkWidth/2+borderWidth/2), (blockHeight/2), modulesOnPage[modkey].content.links[i].title).attr({
-					fill: modulesOnPage[modkey].viewParams.color.text,
-					'font-family': 'Sans-serif',
-					'font-size': modulesOnPage[modkey].viewParams.size.text+'px',
-					'dominant-baseline': 'middle',
-					'font-weight': 'bold',
-    				textAnchor: "middle"
-				});
-			}else{
-				borderPath.push('M '+(borderWidth*i+linkWidth*i)+' '+(blockHeight-borderWidth/2)
-								+'L '+(borderWidth*i+linkWidth*(i+1)+borderWidth/2)+' '+(blockHeight-borderWidth/2)
-								+', '+(borderWidth*i+linkWidth*(i+1)+borderWidth/2)+' '+(borderWidth/2)
-								+', '+(linkWidth*i+borderWidth*i)+' '+(borderWidth/2))+'z';
+			modulesOnPage[modkey].pathArray.push(path.attr({
+				stroke: modulesOnPage[modkey].viewParams.color.border,
+				fill:'none',
+				strokeWidth: modulesOnPage[modkey].viewParams.size.border,
+				"stroke-dasharray": path.getTotalLength() + " " + path.getTotalLength(),
+				"stroke-dashoffset": path.getTotalLength()
+			}));
 
-				modulesOnPage[modkey].snapObj.rect((borderWidth*i + linkWidth*i), borderWidth, linkWidth, linkHeight).attr({
-					stroke: 'none',
-					fill: modulesOnPage[modkey].viewParams.color.back,
-					cursor: 'pointer'
-				});
-
-				modulesOnPage[modkey].snapObj.text( (linkWidth/2+borderWidth*i+linkWidth*i), (blockHeight/2), modulesOnPage[modkey].content.links[i].title).attr({
-					fill: modulesOnPage[modkey].viewParams.color.text,
-					'font-family': 'Sans-serif',
-					'font-size': modulesOnPage[modkey].viewParams.size.text+'px',
-					'dominant-baseline': 'middle',
-					'font-weight': 'bold',
-    				textAnchor: "middle"
-				});
-			}
+			modulesOnPage[modkey].contentArray.push(group.transform('t'+(-blockWidth*1.1)));
 		}
 
-		methodMap.animate.border(borderPath, modkey);
+		methodMap.animate.border(modkey);
 	}
 
-	
+	//vertical
+	methodMap.verticalButtons = function(modkey) {
 
-	//SIDEBAR
-	methodMap.drawSide = function(modkey) {
+		if(modulesOnPage[modkey].content.links.length <  1) {
+			console.log('No Links in module '+ modkey);
+			return false;
+		}
 
+		var blockHeight = parseInt(jQuery(modulesOnPage[modkey].containerName).height()),
+			blockWidth = parseInt(jQuery(modulesOnPage[modkey].containerName).width()),
+			borderWidth = parseInt(modulesOnPage[modkey].viewParams.size.border),
+			links = modulesOnPage[modkey].content.links.length,
+			linkWidth = blockWidth - borderWidth*2,
+			linkHeight = blockHeight/links-borderWidth*2,
+			path = null,
+			text = null,
+			rect = null,
+			group = null;
+
+		for(var i=0; i<links; i++) {
+
+			path = modulesOnPage[modkey].snapObj.path('M '+(borderWidth)+' '+(linkHeight*i+borderWidth*(2*i+0.5))
+				+'L '+(blockWidth-borderWidth/2)+' '+(linkHeight*i+borderWidth*(2*i+0.5))
+				+', '+(blockWidth-borderWidth/2)+' '+(linkHeight*(i+1)+borderWidth*(2*i+1.5))
+				+', '+(borderWidth/2)+' '+(linkHeight*(i+1)+borderWidth*(2*i+1.5))
+				+', '+(borderWidth/2)+' '+(linkHeight*i+borderWidth*(2*i+0.5))+'z');
+
+			rect = modulesOnPage[modkey].snapObj.rect( borderWidth, (linkHeight*i+borderWidth*(2*i+1)), (linkWidth), linkHeight).attr({
+				stroke: 'none',
+				fill: modulesOnPage[modkey].viewParams.color.back
+			});
+
+			text = modulesOnPage[modkey].snapObj.text((blockWidth/2), ((linkHeight+borderWidth*2)*(i+0.5)),  modulesOnPage[modkey].content.links[i].title).attr({
+				fill: modulesOnPage[modkey].viewParams.color.text,
+				'font-family': modulesOnPage[modkey].viewParams.fontFamily,
+				'font-size': modulesOnPage[modkey].viewParams.size.text+'px',
+				'dominant-baseline': 'middle',
+				'font-weight': 'bold',
+				textAnchor: "middle"
+			});
+
+			group = modulesOnPage[modkey].snapObj.g().attr({
+				cursor: 'pointer'
+			});
+
+			group.add(rect,text);
+
+			modulesOnPage[modkey].pathArray.push(path.attr({
+				stroke: modulesOnPage[modkey].viewParams.color.border,
+				fill:'none',
+				strokeWidth: modulesOnPage[modkey].viewParams.size.border,
+				"stroke-dasharray": path.getTotalLength() + " " + path.getTotalLength(),
+				"stroke-dashoffset": path.getTotalLength()
+			}));
+
+			modulesOnPage[modkey].contentArray.push(group.transform('t'+(-blockWidth*1.1)));
+		}
+
+		methodMap.animate.border(modkey);
 	}
 
 	methodMap.slInit = function(modules) {
@@ -189,17 +265,12 @@ var SvgLayout = (function($) {
 				methodMap.moduleInit(modules[key]);
 			}
 		}
-
-		console.log('Modules On Page: ');
-		for(key in modulesOnPage) {
-			console.log(modulesOnPage[key]);
-		}
 	}
 
 	return {
 		init: methodMap.slInit,
 		mods: modulesOnPage
-		};
+	};
 
 }(Snap));
 
@@ -207,9 +278,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 	SvgLayout.init([
 		{
-			type: 'navbar',
-			modkey: 'navbar12',
-			containerName: '#slNavBar',
+			type: 'horizontal',
+			modkey: 'horizontal12',
+			containerName: '#slhorizontal',
 			content: {
 				links: [
 					{title: 'Главная', link: '#'},
@@ -217,19 +288,18 @@ document.addEventListener("DOMContentLoaded", function () {
 					{title: 'Доставка', link: '#'},
 					{title: 'О нас', link: '#'},
 					{title: 'Телефон', link: '#'},
-					{title: 'О нас', link: '#'},
-					{title: 'Телефон', link: '#'}
+					{title: 'О нас', link: '#'}
 				]
 			},
 			viewParams: {
 				size: {
-					border: '2'
+					border: 2 
 				}
 			}
 		},{
-			type: 'navbar',
-			modkey: 'navbar1',
-			containerName: '#slNavBar1',
+			type: 'horizontal',
+			modkey: 'horizontal1',
+			containerName: '#slhorizontal1',
 			content: {
 				links: [
 					{title: 'Главная', link: '#'},
@@ -245,29 +315,40 @@ document.addEventListener("DOMContentLoaded", function () {
 					border: '#000'
 				},
 				size: {
-					border: '10'
+					border: 10
 				},
-				animationSpeed: 300
+				animationSpeed: 400
 			}
 		},{
-			type: 'sidebar',
-			modkey: 'sidebar',
-			containerName: '#slSideBar',
+			type: 'vertical',
+			modkey: 'vertical',
+			containerName: '#slvertical',
 			content: {
 				links: [
 					{title: 'Главная', link: '#'},
 					{title: 'Продукты', link: '#'},
 					{title: 'Доставка', link: '#'},
 					{title: 'О нас', link: '#'},
-					{title: 'Телефон', link: '#'}
+					{title: 'Телефон', link: '#'},
+					{title: 'О нас', link: '#'},
+					{title: 'Телефон', link: '#'},
+					{title: 'Главная', link: '#'},
+					{title: 'Продукты', link: '#'},
+					{title: 'Доставка', link: '#'},
+					{title: 'О нас', link: '#'}
 				]
 			},
 			viewParams: {
 				color: {
-					text: '#000',
-					back: '#fcc',
-					border: '#000'
-				}
+					text: 'rgba(256,256,256,.7)',
+					back: 'rgba(15, 176, 240, 0.68)',
+					border: 'rgba(0,0,0,.7)'
+				},
+				size: {
+					text: 18,
+					border: 1
+				},
+				animationSpeed: 400
 			}
 		}
 	]);
@@ -276,3 +357,4 @@ document.addEventListener("DOMContentLoaded", function () {
 //Проверить совпадение имен модулей на странице
 //Сделать обертку
 //Сделать резиновые модули
+//Сетка()
