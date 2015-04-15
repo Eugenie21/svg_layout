@@ -42,12 +42,16 @@ var SvgLayout = (function($) {
 				this.modkey = module.modkey;
 				this.containerName = module.containerName;
 				this.buttons = [];
+
+				if(module.params == undefined)
+					module.params = {};
+
 				this.viewParams = {
-					fontFamily: 'Sans-serif',
-					fontSize: '15px',
-					borderWidth: '0',
-					borderRadius: '50',
-					marginSize: '15px'
+					fontFamily: (module.params.fontFamily? module.params.fontFamily : 'Sans-serif'),
+					fontSize: ((module.params.fontSize)? module.params.fontSize : '20px'),
+					borderWidth: ((module.params.borderWidth)? module.params.borderWidth : '0'),
+					borderRadius: ((module.params.borderRadius)? module.params.borderRadius : '50'),
+					marginSize: ((module.params.marginSize)? module.params.marginSize : '10px')
 				};
 			},
 		},
@@ -55,29 +59,29 @@ var SvgLayout = (function($) {
 		themeMap = {
 			simple: {
 				green: {
-					fontColor: 'rgba(256,256,256,.8)',
-					backColor: 'rgb(40, 143, 56)',
-					borderColor: 'rgb(14, 72, 23)'
+					fontColor: '#CAF5D2',
+					backColor: '#17BC36',
+					borderColor: '#045012'
 				},
 				yellow: {
-					fontColor: 'rgba(0,0,0,.5)',
-					backColor: 'rgb(215, 221, 0)',
-					borderColor: 'rgb(55, 57, 0)'
+					fontColor: '#5F5E4F',
+					backColor: '#F6EE45',
+					borderColor: '#242203'
 				},
 				red: {
-					fontColor: 'rgba(256,256,256,.8)',
-					backColor: 'rgb(240, 15, 15)',
-					borderColor: 'rgb(77, 3, 3)'
+					fontColor: '#F9E0E0',
+					backColor: '#F63E3E',
+					borderColor: '#510505'
 				},
 				blue: {
-					fontColor: 'rgba(256,256,256,.8)',
-					backColor: 'rgb(18, 21, 227)',
-					borderColor: 'rgb(2, 3, 51)'
+					fontColor: '#D8F1F9',
+					backColor: '#3AACD2',
+					borderColor: '#063F51'
 				},
 				orange: {
-					fontColor: 'rgba(256,256,256,.8)',
-					backColor: 'rgb(216, 124, 4)',
-					borderColor: 'rgb(56, 32, 2)'
+					fontColor: '#F8E3D1',
+					backColor: '#ED8125',
+					borderColor: '#3C1C00'
 				}
 			}
 		},
@@ -92,51 +96,12 @@ var SvgLayout = (function($) {
 			verticalButtons: null,
 
 			animate: {
-				border: null,
-				content: null
+				path: null,
+				block: null
 			},
 
 			shuffleArray: null
 		};
-
-	methodMap.makeButtons = function(modkey, buttons) {
-
-		if(buttons.length <  1) {
-			console.log('No Links in module '+ modkey);
-			return false;
-		}
-
-		var blockHeight = parseInt(jQuery(modulesOnPage[modkey].containerName).height()),
-			blockWidth = parseInt(jQuery(modulesOnPage[modkey].containerName).width()),
-			marginSize = parseInt(modulesOnPage[modkey].viewParams.marginSize),
-			links = buttons.length,
-			linkWidth = blockWidth/buttons[0].length - marginSize*2,
-			linkHeight = blockHeight/buttons.length - marginSize*2,
-			snap = new Snap(modulesOnPage[modkey].containerName),
-			rect = null,
-			filter = snap.filter('<feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />'
-								+'<feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10" result="goo" />');
-
-		var filterGroup = snap.g().attr({filter: filter});
-
-		for(var i = 0; i<buttons.length; i++) {
-
-			modulesOnPage[modkey].buttons.push([]);
-
-			for(var j = 0; j<buttons[0].length; j++) {
-
-				rect = snap.rect( (linkWidth*j+marginSize*(2*j+1)), (linkHeight*i+marginSize*(2*i+1)), linkWidth, linkHeight).attr({
-					rx: blockHeight/modulesOnPage[modkey].viewParams.borderRadius,
-					ry: blockHeight/modulesOnPage[modkey].viewParams.borderRadius,
-					strokeWidth: modulesOnPage[modkey].viewParams.borderWidth,
-					stroke: buttons[i][j].theme.borderColor,
-					fill: buttons[i][j].theme.backColor
-				}).drag();
-
-				filterGroup.add(rect);
-			}
-		}
-	}
 
 	methodMap.moduleInit = function(module) {
 
@@ -153,181 +118,114 @@ var SvgLayout = (function($) {
 		methodMap.makeButtons(module.modkey, module.buttons);
 	}
 
-	// methodMap.shuffleArray = function(array) {
+	methodMap.shuffleArray = function(array) {
 
-	// 	var currentIndex = array.length, temporaryValue, randomIndex ;
+		var currentIndex = array.length, temporaryValue, randomIndex ;
 
-	// 	// While there remain elements to shuffle...
-	// 	while (0 !== currentIndex) {
+		// While there remain elements to shuffle...
+		while (0 !== currentIndex) {
 
-	// 		// Pick a remaining element...
-	// 		randomIndex = Math.floor(Math.random() * currentIndex);
-	// 		currentIndex -= 1;
+			// Pick a remaining element...
+			randomIndex = Math.floor(Math.random() * currentIndex);
+			currentIndex -= 1;
 
-	// 		// And swap it with the current element.
-	// 		temporaryValue = array[currentIndex];
-	// 		array[currentIndex] = array[randomIndex];
-	// 		array[randomIndex] = temporaryValue;
+			// And swap it with the current element.
+			temporaryValue = array[currentIndex];
+			array[currentIndex] = array[randomIndex];
+			array[randomIndex] = temporaryValue;
 
-	// 		console.log(randomIndex);
-	// 	}
+			console.log(randomIndex);
+		}
 
-	// 	return array;
-	// }
+		return array;
+	}
 
-	// methodMap.animate.border = function(modkey, index = 0) {
+	methodMap.animate.path = function(modkey, index = 0) {
 
-	// 	var path = modulesOnPage[modkey].pathArray[index], 
-	// 		pathLength = path.getTotalLength();
+		var path = modulesOnPage[modkey].pathArray[index], 
+			pathLength = path.getTotalLength();
 
-	// 	path.animate({"stroke-dashoffset": 0}, modulesOnPage[modkey].viewParams.animationSpeed, mina.linear);
+		path.animate({"stroke-dashoffset": 0}, modulesOnPage[modkey].viewParams.animationSpeed, mina.linear);
 
-	// 	setTimeout(function() {
-	// 		if(modulesOnPage[modkey].pathArray[++index]) {
-	// 			methodMap.animate.border(modkey, index++);
-	// 		}else{
-	// 			methodMap.animate.content(modkey);
-	// 		}
-	// 	}, modulesOnPage[modkey].viewParams.animationSpeed/2);
-	// 	return false;
-	// }
+		setTimeout(function() {
+			if(modulesOnPage[modkey].pathArray[++index]) {
+				methodMap.animate.path(modkey, index++);
+			}else{
+				methodMap.animate.content(modkey);
+			}
+		}, modulesOnPage[modkey].viewParams.animationSpeed/2);
+		return false;
+	}
 
-	// methodMap.animate.content = function(modkey, index = 0) {
+	methodMap.animate.content = function(modkey, index = 0) {
 		
-	// 	modulesOnPage[modkey].contentArray[index].animate({ 'transform': 'T 0' }, 
-	// 	modulesOnPage[modkey].viewParams.animationSpeed, mina.linear);
+		modulesOnPage[modkey].contentArray[index].animate({ 'transform': 'T 0' }, 
+		modulesOnPage[modkey].viewParams.animationSpeed, mina.linear);
 
-	// 	setTimeout(function() {
-	// 		if(modulesOnPage[modkey].contentArray[++index]) {
-	// 			methodMap.animate.content(modkey, index++);
-	// 		}else{
-	// 			return true			
-	// 		}
-	// 	}, modulesOnPage[modkey].viewParams.animationSpeed/2);
-	// 	return false;
-	// }
+		setTimeout(function() {
+			if(modulesOnPage[modkey].contentArray[++index]) {
+				methodMap.animate.content(modkey, index++);
+			}else{
+				return true			
+			}
+		}, modulesOnPage[modkey].viewParams.animationSpeed/2);
+		return false;
+	}
 
-	//horizontal
-	methodMap.horizontalButtons = function(modkey) {
+	methodMap.makeButtons = function(modkey, buttons) {
 
-		if(modulesOnPage[modkey].content.links.length <  1) {
+		if(buttons.length <  1) {
 			console.log('No Links in module '+ modkey);
 			return false;
 		}
 
 		var blockHeight = parseInt(jQuery(modulesOnPage[modkey].containerName).height()),
 			blockWidth = parseInt(jQuery(modulesOnPage[modkey].containerName).width()),
-			borderWidth = parseInt(modulesOnPage[modkey].viewParams.size.border),
-			links = modulesOnPage[modkey].content.links.length,
-			linkWidth = blockWidth/links - borderWidth*2,
-			linkHeight = blockHeight-borderWidth*2,
-			path = null,
-			text = null,
+			marginSize = parseInt(modulesOnPage[modkey].viewParams.marginSize),
+			links = buttons.length,
+			linkWidth = blockWidth/buttons[0].length - marginSize*2,
+			linkHeight = blockHeight/buttons.length - marginSize*2,
+			snap = new Snap(modulesOnPage[modkey].containerName),
 			rect = null,
-			group = null;
+			filter = snap.filter('<feGaussianBlur in="SourceGraphic" stdDeviation="'+marginSize+'" result="blur" />'
+								+'<feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10"/>'),
+			filterGroup = snap.g().attr({filter: filter});
 
-		for(var i=0; i<links; i++) {
+		for(var i = 0; i<buttons.length; i++) {
 
-			path = modulesOnPage[modkey].snapObj.path('M '+(linkWidth*i+borderWidth*(2*i+0.5))+' '+(borderWidth)
-				+'L '+(linkWidth*i+borderWidth*(2*i+0.5))+' '+(blockHeight-borderWidth/2)
-				+', '+(linkWidth*(i+1)+borderWidth*(2*i+1.5))+' '+(blockHeight-borderWidth/2)
-				+', '+(linkWidth*(i+1)+borderWidth*(2*i+1.5))+' '+(borderWidth/2)
-				+', '+(linkWidth*i+borderWidth*(2*i+0.5))+' '+(borderWidth/2)+'z');
+			modulesOnPage[modkey].buttons.push([]);
 
-			rect = modulesOnPage[modkey].snapObj.rect( (linkWidth*i+borderWidth*(2*i+1)), borderWidth, (linkWidth), linkHeight).attr({
-				stroke: 'none',
-				fill: modulesOnPage[modkey].viewParams.color.back
-			});
+			for(var j = 0; j<buttons[0].length; j++) {
 
-			text = modulesOnPage[modkey].snapObj.text(((linkWidth+borderWidth*2)*(i+0.5)), (blockHeight/2), modulesOnPage[modkey].content.links[i].title).attr({
-				fill: modulesOnPage[modkey].viewParams.color.text,
-				'font-family': modulesOnPage[modkey].viewParams.fontFamily,
-				'font-size': modulesOnPage[modkey].viewParams.size.text+'px',
-				'dominant-baseline': 'middle',
-				'font-weight': 'bold',
-				textAnchor: "middle"
-			});
+				var button = snap.g()
 
-			group = modulesOnPage[modkey].snapObj.g().attr({
-				cursor: 'pointer'
-			});
+				// path = snap.path('M '+(linkWidth*j+marginSize*(2*j+0.5))+' '+(linkHeight*i+marginSize*(2*i+0.5))
+				// 	+'L '+(linkWidth*j+marginSize*(2*j+0.5))+' '+(linkHeight*(i+1)+marginSize*(2*i+1.5))
+				// 	+', '+(linkWidth*(j+1)+marginSize*(2*j+1.5))+' '+(linkHeight*(i+1)+marginSize*(2*i+1.5))
+				// 	+', '+(linkWidth*(j+1)+marginSize*(2*j+1.5))+' '+(linkHeight*i+marginSize*(2*i+0.5))
+				// 	+', '+(linkWidth*j+marginSize*(2*j+0.5))+' '+(linkHeight*i+marginSize*(2*i+0.5))).attr({stroke: '#000'});
 
-			group.add(rect,text);
+				rect = snap.rect( (linkWidth*j+marginSize*(2*j+1)), (linkHeight*i+marginSize*(2*i+1)), linkWidth, linkHeight).attr({
+					rx: blockHeight/modulesOnPage[modkey].viewParams.borderRadius,
+					ry: blockHeight/modulesOnPage[modkey].viewParams.borderRadius,
+					strokeWidth: modulesOnPage[modkey].viewParams.borderWidth,
+					stroke: buttons[i][j].theme.borderColor,
+					fill: buttons[i][j].theme.backColor
+				}).drag();
 
-			modulesOnPage[modkey].pathArray.push(path.attr({
-				stroke: modulesOnPage[modkey].viewParams.color.border,
-				fill:'none',
-				strokeWidth: modulesOnPage[modkey].viewParams.size.border,
-				"stroke-dasharray": path.getTotalLength() + " " + path.getTotalLength(),
-				"stroke-dashoffset": path.getTotalLength()
-			}));
+				text = snap.text(((linkWidth+marginSize*2)*(j+0.5)), ((linkHeight+marginSize*2)*(i+0.5)), buttons[i][j].content).attr({
+					fill: buttons[i][j].theme.fontColor,
+					'font-family': modulesOnPage[modkey].viewParams.fontFamily,
+					'font-size': modulesOnPage[modkey].viewParams.fontSize,
+					'dominant-baseline': 'middle',
+					'font-weight': 'bold',
+					textAnchor: "middle"
+				});
 
-			modulesOnPage[modkey].contentArray.push(group.transform('t'+(-blockWidth*1.1)));
+				filterGroup.add(rect);
+			}
 		}
-
-		methodMap.animate.border(modkey);
 	}
-
-	// //vertical
-	// methodMap.verticalButtons = function(modkey) {
-
-	// 	if(modulesOnPage[modkey].content.links.length <  1) {
-	// 		console.log('No Links in module '+ modkey);
-	// 		return false;
-	// 	}
-
-	// 	var blockHeight = parseInt(jQuery(modulesOnPage[modkey].containerName).height()),
-	// 		blockWidth = parseInt(jQuery(modulesOnPage[modkey].containerName).width()),
-	// 		borderWidth = parseInt(modulesOnPage[modkey].viewParams.size.border),
-	// 		links = modulesOnPage[modkey].content.links.length,
-	// 		linkWidth = blockWidth - borderWidth*2,
-	// 		linkHeight = blockHeight/links-borderWidth*2,
-	// 		path = null,
-	// 		text = null,
-	// 		rect = null,
-	// 		group = null;
-
-	// 	for(var i=0; i<links; i++) {
-
-	// 		path = modulesOnPage[modkey].snapObj.path('M '+(borderWidth)+' '+(linkHeight*i+borderWidth*(2*i+0.5))
-	// 			+'L '+(blockWidth-borderWidth/2)+' '+(linkHeight*i+borderWidth*(2*i+0.5))
-	// 			+', '+(blockWidth-borderWidth/2)+' '+(linkHeight*(i+1)+borderWidth*(2*i+1.5))
-	// 			+', '+(borderWidth/2)+' '+(linkHeight*(i+1)+borderWidth*(2*i+1.5))
-	// 			+', '+(borderWidth/2)+' '+(linkHeight*i+borderWidth*(2*i+0.5))+'z');
-
-	// 		rect = modulesOnPage[modkey].snapObj.rect( borderWidth, (linkHeight*i+borderWidth*(2*i+1)), (linkWidth), linkHeight).attr({
-	// 			stroke: 'none',
-	// 			fill: modulesOnPage[modkey].viewParams.color.back
-	// 		});
-
-	// 		text = modulesOnPage[modkey].snapObj.text((blockWidth/2), ((linkHeight+borderWidth*2)*(i+0.5)),  modulesOnPage[modkey].content.links[i].title).attr({
-	// 			fill: modulesOnPage[modkey].viewParams.color.text,
-	// 			'font-family': modulesOnPage[modkey].viewParams.fontFamily,
-	// 			'font-size': modulesOnPage[modkey].viewParams.size.text+'px',
-	// 			'dominant-baseline': 'middle',
-	// 			'font-weight': 'bold',
-	// 			textAnchor: "middle"
-	// 		});
-
-	// 		group = modulesOnPage[modkey].snapObj.g().attr({
-	// 			cursor: 'pointer'
-	// 		});
-
-	// 		group.add(rect,text);
-
-	// 		modulesOnPage[modkey].pathArray.push(path.attr({
-	// 			stroke: modulesOnPage[modkey].viewParams.color.border,
-	// 			fill:'none',
-	// 			strokeWidth: modulesOnPage[modkey].viewParams.size.border,
-	// 			"stroke-dasharray": path.getTotalLength() + " " + path.getTotalLength(),
-	// 			"stroke-dashoffset": path.getTotalLength()
-	// 		}));
-
-	// 		modulesOnPage[modkey].contentArray.push(group.transform('t'+(-blockWidth*1.1)));
-	// 	}
-
-	// 	methodMap.animate.border(modkey);
-	// }
 
 	methodMap.slInit = function(modules) {
 
@@ -361,41 +259,24 @@ document.addEventListener("DOMContentLoaded", function () {
 			containerName: '#gridTest',
 			buttons: [
 				[
-					{content: '1', click: consoleFunction, theme: themes.simple.green},
-					{content: '2', click: consoleFunction, theme: themes.simple.red},
-					{content: '3', click: consoleFunction, theme: themes.simple.yellow},
-					{content: '4', click: consoleFunction, theme: themes.simple.blue},
-					{content: '5', click: consoleFunction, theme: themes.simple.orange}
+					{content: "\uf206", click: consoleFunction, theme: themes.simple.green},
+					{content: "\uf1e2", click: consoleFunction, theme: themes.simple.red},
+					{content: "\uf1ce", click: consoleFunction, theme: themes.simple.yellow},
+					{content: "\uf0c2", click: consoleFunction, theme: themes.simple.blue},
+					{content: "\uf126", click: consoleFunction, theme: themes.simple.orange},
 				],
 				[
-					{content: '1', click: consoleFunction, theme: themes.simple.green},
-					{content: '2', click: consoleFunction, theme: themes.simple.red},
-					{content: '3', click: consoleFunction, theme: themes.simple.yellow},
-					{content: '4', click: consoleFunction, theme: themes.simple.blue},
-					{content: '5', click: consoleFunction, theme: themes.simple.orange}
-				],
-				[
-					{content: '1', click: consoleFunction, theme: themes.simple.green},
-					{content: '2', click: consoleFunction, theme: themes.simple.red},
-					{content: '3', click: consoleFunction, theme: themes.simple.yellow},
-					{content: '4', click: consoleFunction, theme: themes.simple.blue},
-					{content: '5', click: consoleFunction, theme: themes.simple.orange}
-				],
-				[
-					{content: '1', click: consoleFunction, theme: themes.simple.green},
-					{content: '2', click: consoleFunction, theme: themes.simple.red},
-					{content: '3', click: consoleFunction, theme: themes.simple.yellow},
-					{content: '4', click: consoleFunction, theme: themes.simple.blue},
-					{content: '5', click: consoleFunction, theme: themes.simple.orange}
-				],
-				[
-					{content: '1', click: consoleFunction, theme: themes.simple.green},
-					{content: '2', click: consoleFunction, theme: themes.simple.red},
-					{content: '3', click: consoleFunction, theme: themes.simple.yellow},
-					{content: '4', click: consoleFunction, theme: themes.simple.blue},
-					{content: '5', click: consoleFunction, theme: themes.simple.orange}
+					{content: "\uf0f4", click: consoleFunction, theme: themes.simple.green},
+					{content: "\uf0e5", click: consoleFunction, theme: themes.simple.red},
+					{content: "\uf219", click: consoleFunction, theme: themes.simple.yellow},
+					{content: "\uf0f3", click: consoleFunction, theme: themes.simple.blue},
+					{content: "\uf06d", click: consoleFunction, theme: themes.simple.orange}
 				]
-			]
+			],
+			params : {
+				fontFamily: 'FontAwesome',
+				fontSize: '30px'
+			}
 		}
 	]);
 }, false);
